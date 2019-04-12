@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.springframework.org/schema/jdbc">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <!-- 引入easyui样式文件 -->
+    <link type="text/css" rel="stylesheet" href="/jquery-easyui-1.5/themes/default/easyui.css">
+    <!-- 引入easyui图标样式文件 -->
+    <link type="text/css" rel="stylesheet" href="/jquery-easyui-1.5/themes/icon.css">
+    <!-- 引入jquery js文件 -->
+    <script type="text/javascript" src="/js/jquery.min.js"></script>
+    <!-- 引入easyui的js文件 -->
+    <script type="text/javascript" src="/jquery-easyui-1.5/jquery.easyui.min.js"></script>
+    <!-- 引入easyui支持中文的js -->
+    <script type="text/javascript" src="/jquery-easyui-1.5/util-js.js"></script>
+    <!-- 引入easyui支持中文的js -->
+    <script type="text/javascript" src="/jquery-easyui-1.5/locale/easyui-lang-zh_CN.js"></script>
+</head>
+<body>
+<div id="searchDiv">
+    <a href="javascript:addOpen()" class="easyui-linkbutton" data-options="iconCls:'icon-add',plain:true">新增</a>
+    <a href="javascript:deletes()" class="easyui-linkbutton" data-options="iconCls:'icon-remove',plain:true">批量删除</a>
+</div>
+<!-- 定义弹框 -->
+<div id="myDialog" class="easyui-dialog" data-options="title:'新增',iconCls:'icon-add',modal:true,closed:true,buttons:'#myButton'"
+     style="width:800px; height:500px">
+    <form id="myForm" method="post">
+        <table>
+            <input type="hidden" name="logId">
+            <tr>
+                <td>日志</td>
+                <td><input class="easyui-textbox" name="logName"></td>
+            </tr>
+            <tr>
+                <td>类型</td>
+                <td><input class="easyui-textbox" name="logType"></td>
+            </tr>
+            <tr>
+                <td>描述</td>
+                <td><input class="easyui-textbox" name="logInfo">
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+<!-- 定义按钮 -->
+<div id="myButton">
+    <a href="javascript:addLog()" class="easyui-linkbutton" data-options="iconCls:'icon-save'">保存</a>
+    <a href="javascript:closeDig()" class="easyui-linkbutton"  data-options="iconCls:'icon-cancel'">关闭</a>
+</div>
+<!-- 定义表格 -->
+<table id="myTable"></table>
+</body>
+<script th:inline="none">
+    $(function(){
+        queryLog();
+    })
+    //修改.回显
+    function queryUserId(logId){
+        $.ajax({
+            url:'/queryLogId2',
+            type:"post",
+            data:{logId:logId},
+            success:function(data){
+
+                //数据回显
+                $("#myForm").form("load",data);
+
+                $('#myDialog').dialog({
+                    title:'修改用户',
+                    iconCls:'icon-add',
+                    closed:false //true 关闭 false 打开
+                })
+            }
+        })
+    }
+    //批删
+    function deletes(){
+        var arr=$("#myTable").datagrid('getChecked');
+        if(arr.length<=0){
+            $.messager.alert("提示","请选择要删除的数据","warning");
+            return false;
+        }
+        $.messager.confirm("提示","是否要删除"+arr.length+"条数据",function(r){
+            if(r){
+                var ids="";
+                for (var i = 0; i < arr.length; i++) {
+                    if(ids==""){
+                        ids+=arr[i].logId;
+                    }else{
+                        ids+=","+arr[i].logId;
+                    }
+                }
+                $.ajax({
+                    url:"/deleteuser",
+                    type:"post",
+                    data:{logId:ids},
+                    success:function(){
+                        $.messager.alert("提示","成功删除"+arr.length+"条数据","info");
+                        queryLog();
+                    },error:function(){
+                        $.messager.alert("提示","删除失败","error");
+                    }
+                })
+            }
+        });
+    }
+    //单删
+    function deletell(logId){
+        $.messager.confirm("提示","确认删除吗?",function(r){
+            if(r){
+                $.ajax({
+                    url:"/deleteuser",
+                    type:"post",
+                    data:{logId:logId},
+                    success:function(){
+
+                        $.messager.alert("提示","删除成功","info");
+                        queryLog();
+                    },error:function(){
+                        $.messager.alert("提示","删除失败","error");
+                    }
+                })
+            }
+        })
+    }
+    //新增
+    function addLog() {
+        $("#myForm").form("submit",{
+            url:"/addLog2",
+            success:function(){
+                $.messager.alert("提示","保存成功！","info");
+                //关闭弹框
+                $("#myDialog").dialog('close');
+                queryLog();
+            }
+        })
+    }
+    //打开新增弹框
+    function addOpen(){
+
+        //重置表单
+        $("#myForm").form("reset");
+
+        $('#myDialog').dialog({
+            title:'新增用户',
+            iconCls:'icon-add',
+            closed:false //true 关闭 false 打开
+        })
+    }
+    //关闭按钮
+    function closeDig(){
+        $("#myDialog").dialog('close');
+    }
+    //查询
+    function queryLog(){
+    $("#myTable").datagrid({
+
+        url:"/queryLog2",
+
+        columns:[[
+            {field:'idss',checkbox:true},
+            {field:'logId',title:'编号'},
+            {field:'logName',title:'名字'},
+            {field:'logType',title:'登录账号'},
+            {field:'logInfo',title:'密码'},
+            {field: 'tools', title: '操作', formatter: function (value, row, index) {
+                    var str = "";
+                    str += "<a href='javascript:deletell("+row.logId+")'>删除</a>" +
+                          "|<a href='javascript:queryUserId("+row.logId+")'>修改</a>"
+                    return str;
+                }},
+        ]],
+
+    })
+    }
+</script>
+</html>

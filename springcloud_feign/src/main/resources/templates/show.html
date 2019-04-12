@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <!-- 引入jequery -->
+    <script type="text/javascript" src="/js/jquery.min.js"></script>
+    <!-- 引入bootstrap的css、js文件 -->
+    <script type="text/javascript" src="/js/bootstrap3/js/bootstrap.js"></script>
+    <link rel="stylesheet" href="/js/bootstrap3/css/bootstrap.css">
+    <!-- 引入table的css、js -->
+    <script type="text/javascript" src="/js/bootstrap-table/bootstrap-table.js"></script>
+    <link rel="stylesheet" href="/js/bootstrap-table/bootstrap-table.css">
+    <script type="text/javascript" src="/js/bootstrap-table/locale/bootstrap-table-zh-CN.js"></script>
+
+    <!-- 引入bootbox的js -->
+    <script type="text/javascript" src="/js/bootbox/bootbox.all.min.js"></script>
+
+
+</head>
+<body>
+<div id="toolbar">
+    <form class="form-inline">
+        <div class="form-group">
+            <label for="logName">书名</label>
+            <input type="text" class="form-control" id="logName" placeholder="请输入书名">
+        </div>
+        <button type="button" class="btn btn-info glyphicon glyphicon-search" onclick="searchUser()">搜索</button>
+    </form>
+
+    <button type="button" class="btn btn-info" onclick="openAdd()">新增</button>
+    <button type="button" class="btn btn-danger" onclick="delmany()">批删</button>
+</div>
+<!-- 定义表格 -->
+<div id="bookTable"></div>
+</body>
+<script>
+    $(function(){
+        initbookTable();
+    })
+    //修改
+    function openUpdate(logId){
+        //打开修改弹框
+        openUpdateDialog();
+
+        //查询回显数据
+        $.ajax({
+            url:'/queryId',
+            type:'post',
+            async:false,//同步
+            data:{logId:logId},
+            dataType:'json',
+            success:function(data){
+                $("#logId").val(data.logId);
+                $("#name").val(data.logName);
+                $("#priceId").val(data.logType);
+                $("#authorId").val(data.logInfo);
+
+            }
+        });
+    }
+    //打开修改弹框
+    function openUpdateDialog(){
+        bootbox.dialog({
+            title:'修改用户',
+            message: createAddContent("/toUpdateLog"),
+            closeButton: true,//是否显示关闭按钮
+            buttons : {
+                "success" : {
+                    "label" : "<i class='icon-ok'></i> 保存",
+                    "className" : "btn-sm btn-success",
+                    "callback" : function() {
+                        $.ajax({
+                            url:'/addLog',
+                            type:'post',
+                            dataType:'json',
+                            data:$("#bookForm").serialize(),
+                            success:function(data){
+                                if(data){
+                                    initbookTable();
+                                }else{
+                                    bootbox.alert({
+                                        size:"amall",
+                                        title:"提示",
+                                        massage:'修改失败',
+                                    })
+                                }
+
+                            }
+                        });
+                    }
+                },
+                "cancel" : {
+                    "label" : "<i class='icon-info'></i> 取消",
+                    "className" : "btn-sm btn-danger",
+                    "callback" : function() {
+
+                    }
+                }
+            }
+
+        });
+    }
+    function delmany(){
+        var ids = '';
+        var books = $("#bookTable").bootstrapTable("getSelections");
+        for (var i = 0; i < books.length; i++) {
+            ids += ids == '' ? books[i].logId : ","+books[i].logId
+        }
+        delBook(ids);
+    }
+    //单删
+    function delone(logId){
+        delBook(logId)
+    }
+    //删除提出公共代码
+    function delBook(ids){
+        bootbox.confirm({
+            size:"small",
+            message:"你确定要删除吗？",
+            callback:function(result){
+                if(result){
+                    $.ajax({
+                        url:'/deleteLog',
+                        type:'post',
+                        data:{ids:ids},
+                        dataType:'json',
+                        success:function(data){
+                            if(data){
+                                initbookTable();
+                            }else{
+                                bootbox.alert({
+                                    size:"amall",
+                                    title:"提示",
+                                    massage:'删除失败',
+                                })
+                            }
+                        }
+                    })
+                }
+            }
+        })
+    }
+    var res;
+    function createAddContent(url){
+        $.ajax({
+            url:url,
+            async:false,
+            success:function(data){
+                res = data;
+            }
+        });
+        return res;
+    }
+    //新增
+    function openAdd(){
+        bootbox.dialog({
+            title:'添加用户',
+            message: createAddContent("/toAddLog"),
+            closeButton: true,//是否显示关闭按钮
+            buttons : {
+                "success" : {
+                    "label" : "<i class='icon-ok'></i> 保存",
+                    "className" : "btn-sm btn-success",
+                    "callback" : function() {
+                        $.ajax({
+                            url:'/addLog',
+                            type:'post',
+                            dataType:'json',
+                            data:$("#bookForm").serialize(),
+                            success:function(data){
+                                if(data){
+                                    initbookTable();
+                                }else{
+                                    bootbox.alert({
+                                        size:"amall",
+                                        title:"提示",
+                                        massage:'新增失败',
+                                    })
+                                }
+
+                            }
+                        });
+                    }
+                },
+                "cancel" : {
+                    "label" : "<i class='icon-info'></i> 取消",
+                    "className" : "btn-sm btn-danger",
+                    "callback" : function() {
+
+                    }
+                }
+            }
+
+        });
+
+    }
+    //条件查询
+    function searchUser(){
+        $('#bookTable').bootstrapTable('refresh');
+    }
+    //初始化表格数据
+    function initbookTable() {
+        $("#bookTable").bootstrapTable({
+            url:'/queryAll',
+            toolbar:'#toolbar',
+            queryParams:function(){
+                return {
+                    logName:$("#logName").val(),
+
+                }
+            },
+            columns: [
+                {checkbox:true},
+                {field:'logId',title:'编号',align:'center',width:350},
+                {field:'logName',title:'名字',align:'center',width:350},
+                {field:'logType',title:'登录账号',align:'center',width:350},
+                {field:'logInfo',title:'密码',align:'center',width:350},
+                {field:'123',title:'操作',formatter:function(value,row,index){
+                        return '<a href="javascript:delone('+row.logId+')">删除</a>'+
+                            '| <a href="javascript:openUpdate('+row.logId+')">修改</a>'
+                    }}
+
+                
+            ]
+        })
+    }
+</script>
+</html>

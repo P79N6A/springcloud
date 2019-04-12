@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jk.mapper.LogMapper">
+    <select id="queryLogAll" resultType="com.jk.model.Log">
+      select * from log
+        <include refid="bookSql"></include>
+    </select>
+    <sql id="bookSql">
+       where 1 = 1
+        <if test="log.logName != null and log.logName!=''">
+            and logName like '%${log.logName}%'
+        </if>
+    </sql>
+<insert id="addLog" parameterType="com.jk.model.Log">
+    insert into log values(#{logId},#{logName},#{logType},#{logInfo});
+</insert>
+    <!-- 删除 -->
+    <delete id="deleteLog" parameterType="int">
+        delete from log where logId in (
+        <foreach collection="array" index="index" item="item" separator=",">
+            #{item}
+        </foreach>
+        )
+    </delete>
+</mapper>
